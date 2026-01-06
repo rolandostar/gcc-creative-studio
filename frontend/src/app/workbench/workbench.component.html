@@ -65,11 +65,11 @@
             <div class="flex flex-col  md:w-11/12 mx-auto">
 
                 <!-- Top Workspace (3 Columns) -->
-                <div class="flex flex-col xl:flex-row w-11/12 mx-auto my-4 p-6 gap-6 min-h-0 overflow-hidden">
+                <div class="flex flex-col xl:flex-row justify-center w-11/12 mx-auto my-4 p-6 gap-6 min-h-0 ">
 
                     <!-- COL 1: Assets Panel -->
                     <div
-                        class="w-[36rem] rounded-xl p-5 flex flex-col bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 rounded-[48px] shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]">
+                        class="min-w-[28rem] max-w-[36rem] rounded-xl p-5 flex flex-col bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 rounded-[48px] shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-sm font-medium text-gray-200 tracking-tight">Assets - Videos</h2>
                         </div>
@@ -82,12 +82,7 @@
                                 class="aspect-square border-2 border-dashed border-gray-700 rounded-xl flex flex-col items-center justify-center text-gray-500 gap-2 cursor-pointer hover:border-blue-500 hover:text-blue-400 transition-colors relative group bg-[#151517]">
                                 <div
                                     class="w-8 h-8 rounded-full bg-gray-800 group-hover:bg-blue-500/20 flex items-center justify-center transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
+                                    <mat-icon svgIcon="cloud-upload-icon" class="!w-5 !h-5"></mat-icon>
                                 </div>
                                 <span class="text-[10px] font-medium">Add from Cloud</span>
                             </div>
@@ -135,30 +130,30 @@
                         </div>
 
                         <!-- Bottom Tabs (Video / Audio filter) -->
-                        <div class="mt-4 flex  justify-center gap-1">
+                        <div class="mt-4 flex gap-2 justify-center ">
                             <button (click)="activeTab.set('video')"
-                                class="w-30 flex items-center justify-center gap-1.5 py-2 px-2 rounded-full text-s font-medium shadow-sm bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]"
+                                class="w-32 flex items-center justify-center gap-1.5 py-2 px-2 rounded-full text-lg font-medium shadow-sm bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]"
                                 [ngClass]="activeTab() === 'video' ? 'text-white' : 'text-white/50'">
-                                <mat-icon svgIcon="video-clap-icon" class="!w-5 !h-5"></mat-icon>
+                                <mat-icon svgIcon="video-clap-icon" class="!w-6 !h-6"></mat-icon>
                                 Videos
                             </button>
                             <button (click)="activeTab.set('audio')"
-                                class="w-30 flex items-center justify-center gap-1.5 py-2 px-2 rounded-full text-s font-medium shadow-sm bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]"
+                                class="w-32 flex items-center justify-center gap-1.5 py-2 px-2 rounded-full text-lg font-medium shadow-sm bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]"
                                 [ngClass]="activeTab() === 'audio' ? 'text-white' : 'text-white/50'">
-                                <mat-icon svgIcon="sound-sensing-icon" class="!w-5 !h-5"></mat-icon>
+                                <mat-icon svgIcon="sound-sensing-icon" class="!w-6 !h-6"></mat-icon>
                                 Audio
                             </button>
                             <button
-                                class="w-30  flex items-center justify-center gap-1.5 py-2 px-2 rounded-full text-s font-medium text-white/80 shadow-sm bg-gradient-to-b from-zinc-500/50 to-neutral-700/20  shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]">
-                                <mat-icon svgIcon="drive-icon" class="!w-5 !h-5"></mat-icon>
+                                class="w-32  flex items-center justify-center gap-1.5 py-2 px-2 rounded-full text-lg font-medium text-white/80 shadow-sm bg-gradient-to-b from-zinc-500/50 to-neutral-700/20  shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]">
+                                <mat-icon svgIcon="drive-icon" class="!w-6 !h-6"></mat-icon>
                                 Drive
                             </button>
 
                             <!-- Functional Upload Button -->
                             <label
-                                class="h-10 w-10 flex items-center justify-center bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 rounded-[50%] shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]"
+                                class="h-12 w-12 flex items-center justify-center bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 rounded-[50%] shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]"
                                 title="Upload Media">
-                                <mat-icon svgIcon="upload-icon" class="!w-5 !h-5"></mat-icon>
+                                <mat-icon svgIcon="upload-icon" class="!w-6 !h-6"></mat-icon>
                                 <input type="file" multiple accept="video/*,audio/*" class="hidden"
                                     (change)="onFileSelected($event)">
                             </label>
@@ -167,7 +162,7 @@
 
                     <!-- COL 2: Preview Area -->
                     <div
-                        class="w-[30rem]  min-h-[600px] min-w-[400px] flex flex-col items-center justify-center rounded-xl overflow-hidden bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 rounded-[48px] shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]">
+                        class="w-[28rem]  min-h-[600px] min-w-[400px] flex flex-col items-center justify-center rounded-xl overflow-hidden bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 rounded-[48px] shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]">
 
                         <!-- Video Player (Flexible Size) -->
                         <div
@@ -222,7 +217,7 @@
 
                     <!-- COL 3: Properties Panel -->
                     <div
-                        class="w-[36rem] rounded-xl p-6 flex flex-col bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 rounded-[48px] shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]">
+                        class="min-w-[28rem] max-w-[36rem] rounded-xl p-6 flex flex-col bg-gradient-to-b from-zinc-500/50 to-neutral-700/20 rounded-[48px] shadow-[2px_2px_12px_0px_rgba(0,0,0,0.10)] outline outline-1 outline-offset-[-1px] outline-stone-300/80 backdrop-blur-[10px]">
 
                         <!-- Aspect Ratio -->
                         <div class="mb-8">
