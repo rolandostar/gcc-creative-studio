@@ -202,3 +202,15 @@ resource "google_project_iam_member" "cloudsql_client" {
   role    = "roles/cloudsql.client"
   member  = "serviceAccount:${google_service_account.run_sa.email}"
 }
+
+resource "google_project_iam_member" "workflows_editor" {
+  project = var.gcp_project_id
+  role    = "roles/workflows.editor"
+  member  = "serviceAccount:${google_service_account.run_sa.email}"
+}
+
+resource "google_project_iam_member" "workflows_invoker" {
+  project = var.gcp_project_id
+  role    = "roles/workflows.invoker"
+  member  = "serviceAccount:${google_service_account.run_sa.email}"
+}
