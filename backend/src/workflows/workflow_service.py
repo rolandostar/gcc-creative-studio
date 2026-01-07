@@ -221,7 +221,7 @@ class WorkflowService:
                 description=workflow_dto.description,
                 steps=workflow_dto.steps,
             )
-            created_workflow = await self.workflow_repository.create_workflow(workflow_model)
+            created_workflow = await self.workflow_repository.create(workflow_model)
             
             # 3. Generate GCP Workflow YAML (using the same ID)
             yaml_output = self._generate_workflow_yaml(created_workflow)
@@ -247,7 +247,10 @@ class WorkflowService:
 
     async def get_workflow(self, user_id: int, workflow_id: str):
         #  Add logic here if needed before fetching from repository
-        return await self.workflow_repository.get_workflow(user_id, workflow_id)
+        workflow = await self.workflow_repository.get_by_id(workflow_id)
+        if workflow and workflow.user_id == user_id:
+            return workflow
+        return None
 
     async def get_by_id(self, workflow_id: str) -> WorkflowModel | None:
         """Retrieves a workflow by its ID without any authorization checks."""
@@ -258,7 +261,7 @@ class WorkflowService:
     ) -> PaginationResponseDto[WorkflowModel]:
         return await self.workflow_repository.query(user_id, search_dto)
 
-    def update_workflow(
+    async def update_workflow(
         self, workflow_id: str, workflow_dto: WorkflowCreateDto, user: UserModel
     ) -> WorkflowModel:
         """Validates and updates a workflow."""
@@ -279,7 +282,7 @@ class WorkflowService:
             # The GCP workflow ID matches the DB ID (which is already in the format id-UUID)
             self._update_gcp_workflow(yaml_output, workflow_id)
 
-            return self.workflow_repository.update_workflow(updated_model)
+            return await self.workflow_repository.update(workflow_id, updated_model)
         except ValidationError as e:
             raise ValueError(str(e))
 

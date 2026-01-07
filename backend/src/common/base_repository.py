@@ -60,9 +60,10 @@ class BaseStringDocument(BaseDocumentMixin[str]):
     pass
 
 
-class BaseRepository(Generic[ModelType, SchemaType]):
+class BaseRepositoryMixin(Generic[ModelType, SchemaType, IDType]):
     """
-    A generic repository for common SQLAlchemy operations.
+    A generic repository mixin for common SQLAlchemy operations.
+    Generic over IDType to enforce strict types.
     """
 
     def __init__(self, model: Type[ModelType], schema: Type[SchemaType], db: AsyncSession):
@@ -70,7 +71,7 @@ class BaseRepository(Generic[ModelType, SchemaType]):
         self.schema = schema
         self.db = db
 
-    async def get_by_id(self, item_id: Union[int, str]) -> Optional[SchemaType]:
+    async def get_by_id(self, item_id: IDType) -> Optional[SchemaType]:
         """Retrieves a single document by its ID."""
         result = await self.db.execute(
             select(self.model).where(self.model.id == item_id)
@@ -100,7 +101,7 @@ class BaseRepository(Generic[ModelType, SchemaType]):
         await self.db.refresh(db_item)
         return self.schema.model_validate(db_item)
 
-    async def update(self, item_id: Union[int, str], update_data: Union[BaseModel, Dict[str, Any]]) -> Optional[SchemaType]:
+    async def update(self, item_id: IDType, update_data: Union[BaseModel, Dict[str, Any]]) -> Optional[SchemaType]:
         """
         Performs a partial update on a document.
         """
@@ -131,7 +132,7 @@ class BaseRepository(Generic[ModelType, SchemaType]):
         await self.db.refresh(db_item)
         return self.schema.model_validate(db_item)
 
-    async def delete(self, item_id: Union[int, str]) -> bool:
+    async def delete(self, item_id: IDType) -> bool:
         """
         Deletes a document by its ID.
         Returns True if deletion was successful (item existed), False otherwise.
@@ -152,3 +153,13 @@ class BaseRepository(Generic[ModelType, SchemaType]):
         )
         items = result.scalars().all()
         return [self.schema.model_validate(item) for item in items]
+
+
+# BaseRepository defaults to int IDs
+class BaseRepository(BaseRepositoryMixin[ModelType, SchemaType, int]):
+    pass
+
+
+# BaseStringRepository requires String IDs (e.g. UUIDs)
+class BaseStringRepository(BaseRepositoryMixin[ModelType, SchemaType, str]):
+    pass

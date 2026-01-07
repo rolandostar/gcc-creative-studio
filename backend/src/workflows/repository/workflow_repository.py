@@ -17,14 +17,14 @@ from fastapi import Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.common.base_repository import BaseRepository
+from src.common.base_repository import BaseStringRepository
 from src.common.dto.pagination_response_dto import PaginationResponseDto
 from src.database import get_db
 from src.workflows.dto.workflow_search_dto import WorkflowSearchDto
 from src.workflows.schema.workflow_model import Workflow, WorkflowModel
 
 
-class WorkflowRepository(BaseRepository[Workflow, WorkflowModel]):
+class WorkflowRepository(BaseStringRepository[Workflow, WorkflowModel]):
     """Handles persistence for workflow definitions in PostgreSQL."""
 
     def __init__(self, db: AsyncSession = Depends(get_db)):
@@ -70,22 +70,4 @@ class WorkflowRepository(BaseRepository[Workflow, WorkflowModel]):
             data=workflow_data,
         )
 
-    async def create_workflow(self, workflow_model: WorkflowModel) -> WorkflowModel:
-        """Creates a new workflow in the DB."""
-        return await self.create(workflow_model)
 
-    async def get_workflow(self, user_id: int, workflow_id: str) -> Optional[WorkflowModel]:
-        """Retrieves a workflow by ID and User ID."""
-        query = select(self.model).where(
-            self.model.id == workflow_id,
-            self.model.user_id == user_id
-        )
-        result = await self.db.execute(query)
-        item = result.scalar_one_or_none()
-        if not item:
-            return None
-        return self.schema.model_validate(item)
-
-    async def update_workflow(self, workflow_model: WorkflowModel) -> WorkflowModel:
-        """Updates a workflow."""
-        return await self.update(workflow_model.id, workflow_model)
