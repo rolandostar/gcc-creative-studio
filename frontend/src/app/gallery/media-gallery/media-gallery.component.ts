@@ -50,6 +50,9 @@ export class MediaGalleryComponent implements OnInit, OnDestroy, AfterViewInit {
     | 'video/mp4'
     | 'audio/mpeg'
     | 'audio/wav'
+    | 'image/*'
+    | 'video/*'
+    | 'audio/*'
     | null = null;
   @Input() statusFilter: JobStatus | null = JobStatus.COMPLETED;
 
@@ -157,6 +160,14 @@ export class MediaGalleryComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy(): void {
+    this.stopAudio();
+    // Force pause any lingering audio elements to prevent them from playing after component destruction
+    const audios = this.elementRef.nativeElement.querySelectorAll('audio');
+    audios.forEach((a: HTMLAudioElement) => {
+      a.pause();
+      a.src = '';
+    });
+
     this.imagesSubscription?.unsubscribe();
     this.loadingSubscription?.unsubscribe();
     this.allImagesLoadedSubscription?.unsubscribe();
@@ -251,7 +262,7 @@ export class MediaGalleryComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public onMouseEnter(media: MediaItem): void {
-    if (media.mimeType === 'video/mp4') this.playVideo(media.id);
+    if (media.mimeType?.startsWith('video/')) this.playVideo(media.id);
 
     // 2. ADD THIS CHECK
     if (media.mimeType?.startsWith('audio/')) this.playAudio(media.id);
@@ -260,7 +271,7 @@ export class MediaGalleryComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public onMouseLeave(media: MediaItem): void {
-    if (media.mimeType === 'video/mp4') this.stopVideo();
+    if (media.mimeType?.startsWith('video/')) this.stopVideo();
 
     // 3. ADD THIS CHECK
     if (media.mimeType?.startsWith('audio/')) this.stopAudio();

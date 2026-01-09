@@ -99,6 +99,7 @@ import { RunWorkflowModalComponent } from './workflows/workflow-editor/run-workf
 import { GenericStepComponent } from './workflows/workflow-editor/step-components/generic-step/generic-step.component';
 import { WorkflowEditorComponent } from './workflows/workflow-editor/workflow-editor.component';
 import { WorkflowListComponent } from './workflows/workflow-list/workflow-list.component';
+import { WorkbenchComponent } from './workbench/workbench.component';
 
 @NgModule({
   declarations: [
@@ -118,6 +119,7 @@ import { WorkflowListComponent } from './workflows/workflow-list/workflow-list.c
     ImageSelectorComponent,
     SourceAssetGalleryComponent,
     ImageCropperDialogComponent,
+    WorkbenchComponent,
     AudioComponent,
     AddVoiceDialogComponent,
     WorkflowListComponent,
