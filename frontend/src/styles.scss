@@ -61,6 +61,9 @@ $creative-studio-theme: mat.define-theme(
   --color-interactive: 140, 100, 255;
   --circle-size: 90%;
   --blending: hard-light;
+/* Global Text Colors */
+--text-primary: #E3E3E3;
+--text-secondary: #A0A0A0;
 }
 
 // Comment out the line below if you want to use the pre-defined typography utility classes.

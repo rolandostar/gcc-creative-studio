@@ -46,7 +46,8 @@
             <mat-icon>play_arrow</mat-icon>
             Run
         </button>
-        <button mat-icon-button class="secondary-icon-btn" [routerLink]="['/workflows/edit', workflowId]" matTooltip="Open Editor">
+        <button mat-icon-button class="secondary-icon-btn" *ngIf="authService.isUserAdmin()"
+          [routerLink]="['/workflows/edit', workflowId]" matTooltip="Open Editor">
             <mat-icon>edit</mat-icon>
         </button>
       </div>
