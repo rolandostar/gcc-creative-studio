@@ -14,49 +14,95 @@
  * limitations under the License.
  */
 
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(
-    255,
-    255,
-    255,
-    0.85
-  ); // A semi-transparent white background
-  z-index: 10;
+/* Container consistency */
+.dialog-content-container {
+  min-width: 650px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  border-radius: 4px; // To match the dialog's corners
-  backdrop-filter: blur(4px); // Adds a nice "glass" effect
+  color: white;
+  position: relative;
+}
 
-  p {
-    margin-top: 1rem;
-    font-weight: 500;
-    color: rgba(0, 0, 0, 0.7);
+.status-overlay {
+  position: absolute;
+  inset: 0;
+    z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  /* Glassmorphism Effect */
+    background-color: rgba(255, 255, 255, 0.03); // Very subtle light tint
+    backdrop-filter: blur(12px); // Increased blur to hide the text behind cleanly
+    -webkit-backdrop-filter: blur(12px);
+  
+    padding: 2rem;
+    border-radius: 8px;
+  
+    /* Subtle inner glow to define the edges */
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.05);
+  }
+.status-title {
+  margin-top: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+}
+
+.status-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 320px;
+}
+
+.status-icon-large {
+  font-size: 64px !important;
+  height: 64px !important;
+  width: 64px !important;
+
+  &.success {
+    color: #4caf50;
+  }
+
+  &.error {
+    color: #f44336;
   }
 }
 
+/* Cropper & Toolbar Styling */
 .cropper-container {
   height: 400px;
   width: 100%;
+  background: #111;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .controls-toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 1rem;
 
   .control-group {
     display: flex;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 2px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    
+      button {
+        color: rgba(255, 255, 255, 0.8);
+    
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
   }
 }
 
@@ -64,35 +110,41 @@
   transform: rotate(90deg);
 }
 
-.aspect-ratio-dropdown {
-  width: 150px;
+.upscale-field {
+  ::ng-deep .mat-mdc-text-field-wrapper {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+  }
 }
 
-mat-dialog-actions {
-  margin-top: 1rem;
+.btn-gradient {
+  background: linear-gradient(to right, #3b82f6, #8b5cf6, #f87171) !important;
+  color: white !important;
+  font-weight: bold !important;
+  &:disabled {
+      opacity: 0.6;
+      background: #444 !important;
+    }
+  }
+
+.scale-in {
+  animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.footer-controls {
   display: flex;
   align-items: center;
-
-  .footer-controls {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    flex-wrap: wrap;
-  }
-
-  .color-picker {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .flex-spacer {
-    flex: 1 1 auto;
-  }
-}
-
-.crop-upload-btn {
-  background: linear-gradient(to right, #3b82f6, #8b5cf6, #f87171);
-  font-weight: bold;
-  margin-top: 1rem;
+  gap: 20px;
+  flex-wrap: wrap;
 }

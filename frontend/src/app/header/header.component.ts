@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {Component, OnDestroy, Inject, PLATFORM_ID} from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
 import {MatIconRegistry} from '@angular/material/icon';
 import {Router} from '@angular/router';
@@ -25,8 +25,7 @@ import {UserModel} from '../common/models/user.model';
 import {animate, style, transition, trigger} from '@angular/animations';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 import {Subject} from 'rxjs';
-import {takeUntil} from 'rxjs/operators';
-import {isPlatformBrowser} from '@angular/common';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-header',
@@ -59,7 +58,6 @@ export class HeaderComponent implements OnDestroy {
   private readonly destroy$ = new Subject<void>();
   toolsMenuHovered = false;
   private menuTimeout: any;
-  isBrowser: boolean;
 
   constructor(
     private sanitizer: DomSanitizer,
@@ -68,14 +66,10 @@ export class HeaderComponent implements OnDestroy {
     public userService: UserService,
     public authService: AuthService,
     private breakpointObserver: BreakpointObserver,
-    @Inject(PLATFORM_ID) platformId: Object
   ) {
-    this.isBrowser = isPlatformBrowser(platformId);
     // Initialize menuFixed from localStorage
-    if (this.isBrowser) {
-        const storedMenuFixed = localStorage.getItem('menuFixed');
-        this.menuFixed = storedMenuFixed === 'true';
-    }
+    const storedMenuFixed = localStorage.getItem('menuFixed');
+    this.menuFixed = storedMenuFixed === 'true';
 
     this.matIconRegistry
       .addSvgIcon(

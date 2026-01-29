@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, finalize, shareReplay, tap } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, Subscription, EMPTY, timer, } from 'rxjs';
+import { tap, catchError, finalize, shareReplay, switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { WorkspaceStateService } from '../../services/workspace/workspace-state.service';
 import {
   AssetScopeEnum,
   AssetTypeEnum,
 } from '../../admin/source-assets-management/source-asset.model';
-import { WorkspaceStateService } from '../../services/workspace/workspace-state.service';
+
+import {
+  MediaItem,
+  JobStatus,
+} from '../../common/models/media-item.model';
 
 export interface SourceAssetResponseDto {
   id: number;
-  userId: string;
+  userId: number;
   gcsUri: string;
   originalFilename: string;
   mimeType: string;
@@ -36,12 +41,22 @@ export interface SourceAssetResponseDto {
   createdAt: string;
   updatedAt: string;
   presignedUrl: string;
+  presignedOriginalUrl: string;
   presignedThumbnailUrl?: string;
+  // NOTE: You might want to add upscaleFactor here if the backend returns it
+  // upscaleFactor?: string; 
+}
+export interface SourceAssetOptionsDto {
+  aspectRatio?: string;
+  assetType?: AssetTypeEnum;
+  scope?: AssetScopeEnum;
+  mimeType?: string;
+  upscaleFactor?: string;
 }
 
 export interface SourceAssetSearchDto {
   limit?: number;
-  offset?: number;
+  startAfter?: string;
   mimeType?: string;
   assetType?: string;
   userEmail?: string;
@@ -50,9 +65,7 @@ export interface SourceAssetSearchDto {
 export interface PaginationResponseDto<T> {
   data: T[];
   count: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+  nextPageCursor: string | null;
 }
 
 @Injectable({
@@ -62,10 +75,13 @@ export class SourceAssetService {
   private assets$ = new BehaviorSubject<SourceAssetResponseDto[]>([]);
   public isLoading$ = new BehaviorSubject<boolean>(false);
   private allAssetsLoaded$ = new BehaviorSubject<boolean>(false);
-  private currentPage = 0;
-  private pageSize = 20;
+  private nextPageCursor: string | null = null;
   private allFetchedAssets: SourceAssetResponseDto[] = [];
   private filters$ = new BehaviorSubject<SourceAssetSearchDto>({});
+
+  private activeUpscaleJob = new BehaviorSubject<MediaItem | null>(null);
+  public activeUpscaleJob$ = this.activeUpscaleJob.asObservable();
+  private upscalePollingSubscription: Subscription | null = null;
 
   // Cache the request observable to prevent multiple API calls for the same filters.
   private assetsRequest$: Observable<
@@ -104,18 +120,14 @@ export class SourceAssetService {
 
   uploadAsset(
     file: File,
-    options: {
-      aspectRatio?: string;
-      assetType?: AssetTypeEnum;
-      scope?: AssetScopeEnum; // 1. Add scope to the options
-    } = {},
+    options: SourceAssetOptionsDto = {},
   ): Observable<SourceAssetResponseDto> {
     const formData = new FormData();
     formData.append('file', file);
 
     const activeWorkspaceId = this.workspaceStateService.getActiveWorkspaceId();
     if (activeWorkspaceId) {
-      formData.append('workspaceId', activeWorkspaceId.toString());
+      formData.append('workspaceId', String(activeWorkspaceId));
     }
 
     if (options.aspectRatio) {
@@ -124,9 +136,16 @@ export class SourceAssetService {
     if (options.assetType) {
       formData.append('assetType', options.assetType);
     }
-    // 2. Add scope to the form data if it exists
+    // Add scope to the form data if it exists
     if (options.scope) {
       formData.append('scope', options.scope);
+    }
+    if (options.mimeType) {
+      formData.append('mimeType', options.mimeType);
+    }
+
+    if (options.upscaleFactor) {
+      formData.append('upscaleFactor', options.upscaleFactor);
     }
 
     return this.http
@@ -137,8 +156,148 @@ export class SourceAssetService {
       .pipe(tap(() => this.refreshAssets()));
   }
 
+  uploadAndUpscaleImageAsset(
+    file: File,
+    options: SourceAssetOptionsDto = {}
+  ): Observable<MediaItem> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Declare activeWorkspaceId only once
+    const activeWorkspaceId = this.workspaceStateService.getActiveWorkspaceId();
+    if (activeWorkspaceId) {
+      formData.append('workspaceId', String(activeWorkspaceId));
+    }
+
+    if (options.aspectRatio) {
+      formData.append('aspectRatio', options.aspectRatio);
+    }
+    if (options.assetType) {
+      formData.append('assetType', options.assetType);
+    }
+    if (options.scope) {
+      formData.append('scope', options.scope);
+    }
+
+    // Validate and add mimeType only if it's valid
+    const validMimeTypes = ['image/jpeg', 'image/png', 'video/mp4', 'audio/wav'];
+    if (options.mimeType && validMimeTypes.includes(options.mimeType)) {
+      formData.append('mimeType', options.mimeType);
+    } else if (options.mimeType) {
+      console.error(`Invalid mimeType: ${options.mimeType}`);
+    }
+
+    // Add upscaleFactor to the form data
+    if (options.upscaleFactor) {
+      formData.append('upscaleFactor', options.upscaleFactor);
+    }
+
+    return this.http
+      .post<MediaItem>(
+        `${environment.backendURL}/images/upload_upscale`,
+        formData,
+      )
+      .pipe(
+        tap(initialItem => {
+          console.log(
+            'Upscale job started successfully:',
+            initialItem,
+          );
+
+          this.activeUpscaleJob.next(initialItem);
+          this.startUpscalePolling(String(initialItem.id));
+        }),
+      );
+  }
+
+
+  upscaleExistingAsset(
+    asset: SourceAssetResponseDto,
+    options: SourceAssetOptionsDto = {},
+  ): Observable<MediaItem> {
+    const formData = new FormData();
+
+    formData.append('id', String(asset.id));
+    formData.append('gcsUri', asset.gcsUri);
+    formData.append('originalFilename', asset.originalFilename);
+    formData.append('mimeType', asset.mimeType);
+    formData.append('aspectRatio', asset.aspectRatio);
+
+    const workspaceId = this.workspaceStateService.getActiveWorkspaceId();
+    if (workspaceId) {
+      formData.append('workspaceId', String(workspaceId));
+    }
+
+    if (options.upscaleFactor) {
+      formData.append('upscaleFactor', options.upscaleFactor);
+    }
+
+    return this.http
+      .post<MediaItem>(
+        `${environment.backendURL}/images/upload_upscale`,
+        formData,
+      )
+      .pipe(
+        tap(initialItem => {
+          console.log(
+            'Upscale job started successfully:',
+            initialItem,
+          );
+
+          this.activeUpscaleJob.next(initialItem);
+          this.startUpscalePolling(String(initialItem.id));
+        }),
+      );
+  }
+
+  getAssetById(id: number): Observable<SourceAssetResponseDto> {
+    return this.http.get<SourceAssetResponseDto>(
+      `${environment.backendURL}/source_assets/${id}`
+    );
+  }
+
+
+  // UPSCALE POLLING
+
+
+  private startUpscalePolling(mediaId: string): void {
+    this.stopUpscalePolling();
+
+    this.upscalePollingSubscription = timer(2000, 5000) // Start after 2s, then every 5s
+      .pipe(
+        switchMap(() => this.getUpscaleMediaItem(mediaId)),
+        tap(latestItem => {
+          this.activeUpscaleJob.next(latestItem);
+
+          if (
+            latestItem.status === JobStatus.COMPLETED ||
+            latestItem.status === JobStatus.FAILED
+          ) {
+            this.stopUpscalePolling();
+          }
+        }),
+        catchError(err => {
+          console.error('Upscale polling failed', err);
+          this.stopUpscalePolling();
+          return EMPTY;
+        }),
+      )
+      .subscribe();
+  }
+
+  private stopUpscalePolling(): void {
+    this.upscalePollingSubscription?.unsubscribe();
+    this.upscalePollingSubscription = null;
+  }
+
+  private getUpscaleMediaItem(mediaId: string): Observable<MediaItem> {
+    return this.http.get<MediaItem>(
+      `${environment.backendURL}/gallery/item/${mediaId}`,
+    );
+  }
+
   refreshAssets(): void {
-    this.currentPage = 0;
+    this.nextPageCursor = null;
     this.allAssetsLoaded$.next(false);
     this.assets$.next([]);
     this.loadAssets();
@@ -151,7 +310,7 @@ export class SourceAssetService {
 
     if (reset) {
       this.allFetchedAssets = [];
-      this.currentPage = 0;
+      this.nextPageCursor = null;
       this.allAssetsLoaded$.next(false);
       this.assetsRequest$ = null; // Invalidate cache on reset
     }
@@ -169,11 +328,11 @@ export class SourceAssetService {
     this.isLoading$.next(true);
     this.assetsRequest$ = this.fetchAssets().pipe(
       tap(response => {
-        this.currentPage++;
+        this.nextPageCursor = response.nextPageCursor ?? null;
         this.allFetchedAssets.push(...response.data);
         this.assets$.next(this.allFetchedAssets);
 
-        if (this.currentPage >= response.totalPages) {
+        if (!this.nextPageCursor) {
           this.allAssetsLoaded$.next(true);
         } else {
           // If there are more pages, clear the cache so infinite scroll can fetch the next page.
@@ -182,7 +341,7 @@ export class SourceAssetService {
       }),
       catchError(() => {
         this.assetsRequest$ = null; // Allow retry on error
-        return of({ data: [], count: 0, page: 0, pageSize: 0, totalPages: 0 });
+        return of({ data: [], count: 0, nextPageCursor: null });
       }),
       finalize(() => {
         this.isLoading$.next(false);
@@ -200,9 +359,9 @@ export class SourceAssetService {
     const currentFilters = this.filters$.value;
 
     const body: SourceAssetSearchDto = {
-      limit: this.pageSize,
+      limit: 20,
       ...currentFilters,
-      offset: this.currentPage * this.pageSize,
+      startAfter: this.nextPageCursor ?? undefined,
     };
     return this.http.post<PaginationResponseDto<SourceAssetResponseDto>>(
       assetsUrl,
@@ -224,16 +383,11 @@ export class SourceAssetService {
           // Remove the asset from the local BehaviorSubject to update the UI instantly
           const currentAssets = this.assets$.getValue();
           const updatedAssets = currentAssets.filter(
-            asset => asset.id.toString() !== assetId.toString(),
+            asset => asset.id !== assetId,
           );
           this.assets$.next(updatedAssets);
         }),
       );
   }
-
-  getAsset(assetId: number): Observable<SourceAssetResponseDto> {
-    return this.http.get<SourceAssetResponseDto>(
-      `${environment.backendURL}/source_assets/${assetId}`,
-    );
-  }
 }
+

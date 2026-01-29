@@ -18,6 +18,13 @@ import {Component} from '@angular/core';
 import {Router, NavigationEnd, Event as NavigationEvent} from '@angular/router';
 import {trigger, transition, style, query, animate} from '@angular/animations';
 import {LoadingService} from './common/services/loading.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { SourceAssetService } from './common/services/source-asset.service';
+import { GalleryService } from './gallery/gallery.service';
+import { combineLatest, Observable, Subject } from 'rxjs';
+import { takeUntil, distinctUntilChanged, map } from 'rxjs/operators';
+import { JobStatus, MediaItem } from './common/models/media-item.model';
+import { handleSuccessSnackbar, handleErrorSnackbar } from './utils/handleMessageSnackbar';
 
 @Component({
   selector: 'app-root',
@@ -53,10 +60,14 @@ import {LoadingService} from './common/services/loading.service';
 export class AppComponent {
   title = 'creative-studio';
   showHeader = true;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private router: Router,
     public loadingService: LoadingService,
+    private _snackBar: MatSnackBar,
+    private sourceAssetService: SourceAssetService,
+    private galleryService: GalleryService
   ) {
     this.router.events.subscribe((event: NavigationEvent) => {
       if (event instanceof NavigationEnd) {
@@ -74,5 +85,36 @@ export class AppComponent {
         }
       }
     });
+
+    // Global Upscale Notification Subscription
+    combineLatest([
+      this.sourceAssetService.activeUpscaleJob$,
+      this.galleryService.activeUpscaleJob$
+    ])
+      .pipe(
+        takeUntil(this.destroy$),
+        map(([sourceJob, galleryJob]) => sourceJob || galleryJob),
+        distinctUntilChanged((prev, curr) => prev?.id === curr?.id && prev?.status === curr?.status)
+      )
+      .subscribe((job) => {
+        if (job) {
+          if (job.status === JobStatus.COMPLETED) {
+            handleSuccessSnackbar(this._snackBar, 'Upscale finished.');
+          } else if (job.status === JobStatus.FAILED) {
+            let errorMessage = 'Upscale Failed';
+            if (job.errorMessage && (job.errorMessage.includes('too large') || job.errorMessage.includes('400'))) {
+              errorMessage = 'Image already in high resolution';
+            } else if (job.errorMessage) {
+              errorMessage = job.errorMessage.replace(/^\d+:\s*/, '');
+            }
+            handleErrorSnackbar(this._snackBar, { error: { detail: errorMessage } }, 'Upscale Failed, Image already in high resolution');
+          }
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

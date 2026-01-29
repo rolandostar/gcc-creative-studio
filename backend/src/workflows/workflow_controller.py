@@ -24,7 +24,6 @@ from src.workflows.dto.batch_execution_dto import (
     BatchExecutionResponseDto,
 )
 from src.workflows.workflow_service import WorkflowService
-from src.workspaces.workspace_auth_guard import workspace_auth_service
 
 router = APIRouter(
     prefix="/api/workflows",

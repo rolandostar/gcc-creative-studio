@@ -14,87 +14,48 @@
  limitations under the License.
 -->
 
-<h2 mat-dialog-title>Crop Your Image</h2>
-<mat-dialog-content>
-  <div *ngIf="isConverting" class="loading-overlay">
-    <mat-progress-spinner
-      mode="indeterminate"
-      [diameter]="50"
-    ></mat-progress-spinner>
-    <p>Converting image...</p>
+<h2 mat-dialog-title class="!text-white !font-bold">
+  {{ enableUpscale ? 'Crop, Upscale & Upload Your Image' : 'Crop & Upload Your Image' }}
+</h2>
+
+<mat-dialog-content class="dialog-content-container">
+
+  <div *ngIf="isConverting" class="status-overlay">
+    <mat-progress-spinner mode="indeterminate" diameter="50" color="primary"></mat-progress-spinner>
+    <p class="status-title">Preparing Image...</p>
+    <p class="status-subtitle">Converting format for compatibility.</p>
   </div>
 
-  <div *ngIf="!isConverting">
+  <div class="py-2" [class.opacity-20]="isConverting || isStartingJob">
     <div class="controls-toolbar">
-      <mat-form-field
-        appearance="outline"
-        class="aspect-ratio-dropdown mt-3"
-        *ngIf="aspectRatios.length > 1"
-      >
+      <mat-form-field appearance="outline" class="w-40 upscale-field" *ngIf="aspectRatios.length > 1">
         <mat-label>Aspect Ratio</mat-label>
-        <mat-select
-          [value]="currentAspectRatio"
-          (selectionChange)="onAspectRatioChange($event.value)"
-        >
-          <mat-option *ngFor="let ratio of aspectRatios" [value]="ratio.value">
-            {{ ratio.label }}
-          </mat-option>
+        <mat-select [value]="currentAspectRatio" (selectionChange)="onAspectRatioChange($event.value)">
+          <mat-option *ngFor="let ratio of aspectRatios" [value]="ratio.value">{{ ratio.label }}</mat-option>
         </mat-select>
       </mat-form-field>
 
       <div class="control-group">
-        <button mat-icon-button (click)="zoomOut()" matTooltip="Zoom Out">
-          <mat-icon>zoom_out</mat-icon>
-        </button>
-        <button mat-icon-button (click)="zoomIn()" matTooltip="Zoom In">
-          <mat-icon>zoom_in</mat-icon>
-        </button>
+        <button mat-icon-button (click)="zoomOut()" matTooltip="Zoom Out"><mat-icon>zoom_out</mat-icon></button>
+        <button mat-icon-button (click)="zoomIn()" matTooltip="Zoom In"><mat-icon>zoom_in</mat-icon></button>
       </div>
 
       <div class="control-group">
-        <button mat-icon-button (click)="rotateLeft()" matTooltip="Rotate Left">
-          <mat-icon>rotate_left</mat-icon>
-        </button>
-        <button
-          mat-icon-button
-          (click)="rotateRight()"
-          matTooltip="Rotate Right"
-        >
-          <mat-icon>rotate_right</mat-icon>
-        </button>
+        <button mat-icon-button (click)="rotateLeft()" matTooltip="Rotate Left"><mat-icon>rotate_left</mat-icon></button>
+        <button mat-icon-button (click)="rotateRight()" matTooltip="Rotate Right"><mat-icon>rotate_right</mat-icon></button>
       </div>
 
       <div class="control-group">
-        <button
-          mat-icon-button
-          (click)="flipHorizontal()"
-          matTooltip="Flip Horizontal"
-        >
-          <mat-icon>flip</mat-icon>
-        </button>
-        <button
-          mat-icon-button
-          (click)="flipVertical()"
-          matTooltip="Flip Vertical"
-          class="flip-vertical"
-        >
-          <mat-icon>flip</mat-icon>
-        </button>
+        <button mat-icon-button (click)="flipHorizontal()" matTooltip="Flip Horizontal"><mat-icon>flip</mat-icon></button>
+        <button mat-icon-button (click)="flipVertical()" matTooltip="Flip Vertical"
+          class="flip-vertical"><mat-icon>flip</mat-icon></button>
       </div>
-
+      
       <div class="control-group">
-        <button mat-icon-button (click)="moveLeft()" matTooltip="Move Left">
-          <mat-icon>keyboard_arrow_left</mat-icon>
-        </button>
-        <button mat-icon-button (click)="moveRight()" matTooltip="Move Right">
-          <mat-icon>keyboard_arrow_right</mat-icon>
-        </button>
-        <button mat-icon-button (click)="moveUp()" matTooltip="Move Up">
-          <mat-icon>keyboard_arrow_up</mat-icon>
-        </button>
-        <button mat-icon-button (click)="moveDown()" matTooltip="Move Down">
-          <mat-icon>keyboard_arrow_down</mat-icon>
-        </button>
+        <button mat-icon-button (click)="moveLeft()"><mat-icon>keyboard_arrow_left</mat-icon></button>
+        <button mat-icon-button (click)="moveRight()"><mat-icon>keyboard_arrow_right</mat-icon></button>
+        <button mat-icon-button (click)="moveUp()"><mat-icon>keyboard_arrow_up</mat-icon></button>
+        <button mat-icon-button (click)="moveDown()"><mat-icon>keyboard_arrow_down</mat-icon></button>
       </div>
     </div>
 
@@ -111,36 +72,32 @@
     </div>
   </div>
 </mat-dialog-content>
-<mat-dialog-actions align="end">
+<mat-dialog-actions align="end" class="pb-6 px-6">
   <div class="footer-controls">
-    <label class="text-white">Fill Aspect Ratio</label>
-    <mat-slide-toggle [(ngModel)]="containWithinAspectRatio"></mat-slide-toggle>
+    <mat-form-field appearance="outline" class="w-48 upscale-field" *ngIf="enableUpscale">
+      <mat-label>Upscale Factor</mat-label>
+      <mat-select [value]="currentUpscaleFactor" (selectionChange)="onUpscaleFactorChange($event.value)">
+        <mat-option *ngFor="let f of upscaleFactors" [value]="f.value">{{ f.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
 
-    <div class="color-picker">
-      <label class="text-white">Background</label>
-      <input
-        type="color"
-        [ngModel]="backgroundColor"
-        (ngModelChange)="onBackgroundColorChange($event)"
-      />
+    <div class="flex items-center gap-2">
+      <span class="text-white">Fill Aspect Ratio</span>
+      <mat-slide-toggle [checked]="containWithinAspectRatio" (change)="containWithinAspectRatio = $event.checked">
+      </mat-slide-toggle>
     </div>
   </div>
-  <span class="flex-spacer"></span>
-  <button mat-stroked-button mat-dialog-close [disabled]="isUploading">
-    Cancel
-  </button>
+<span class="flex-grow"></span>
+
+<button mat-button (click)="dialogRef.close()" [disabled]="isStartingJob || isUploading"
+  class="!text-gray-400">Cancel</button>
   <button
     mat-flat-button
-    color="primary"
+    class="btn-gradient"
     (click)="uploadCroppedImage()"
-    [disabled]="!croppedImageBlob || isUploading"
-    class="crop-upload-btn"
+    [disabled]="!croppedImageBlob || isStartingJob || isUploading"
   >
-    <mat-progress-spinner
-      *ngIf="isUploading"
-      mode="indeterminate"
-      [diameter]="20"
-    ></mat-progress-spinner>
-    <span *ngIf="!isUploading">Crop & Upload</span>
+    <mat-spinner *ngIf="isStartingJob || isUploading" diameter="20" class="mr-2 inline-block"></mat-spinner>
+    <span>{{ enableUpscale ? 'Crop, Upscale & Upload' : 'Crop & Upload' }}</span>
   </button>
 </mat-dialog-actions>

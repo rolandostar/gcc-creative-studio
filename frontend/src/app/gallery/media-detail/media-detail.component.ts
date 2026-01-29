@@ -92,7 +92,7 @@ export class MediaDetailComponent implements OnDestroy {
   }
 
   fetchMediaDetails(id: number): void {
-    this.mediaSub = this.galleryService.getMedia(id).subscribe({
+    this.mediaSub = this.galleryService.getMedia(String(id)).subscribe({
       next: data => {
         this.mediaItem = data;
         this.isLoading = false;
@@ -187,7 +187,7 @@ export class MediaDetailComponent implements OnDestroy {
     // Note: The 'createTemplateFromMediaItem' method should be implemented in a relevant service (e.g., TemplateService or GalleryService).
     // It should perform a POST request to the `/from-media-item/{media_item_id}` endpoint.
     this.galleryService
-      .createTemplateFromMediaItem(this.mediaItem.id)
+      .createTemplateFromMediaItem(String(this.mediaItem.id))
       .pipe(first())
       .subscribe({
         next: (newTemplate: { id: string }) => {

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-import {Component, Inject} from '@angular/core';
+import { Component, Inject, OnInit, OnDestroy } from '@angular/core'; // Added OnInit, OnDestroy
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {
   ImageCroppedEvent,
   ImageTransform,
   CropperOptions,
 } from 'ngx-image-cropper';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { handleErrorSnackbar } from '../../../utils/handleMessageSnackbar';
 import {HttpClient} from '@angular/common/http';
-import {Observable, finalize} from 'rxjs';
+import { Observable, finalize, Subject, takeUntil } from 'rxjs'; // Added Subject, takeUntil
 import {
-  SourceAssetResponseDto,
   SourceAssetService,
 } from '../../services/source-asset.service';
 import {
-  AssetScopeEnum,
   AssetTypeEnum,
 } from '../../../admin/source-assets-management/source-asset.model';
-import {WorkspaceStateService} from '../../../services/workspace/workspace-state.service';
 import {environment} from '../../../../environments/environment';
+import { MediaItem, JobStatus } from '../../models/media-item.model'; // Added MediaItem and JobStatus
 
 interface AspectRatio {
   label: string;
@@ -40,21 +40,46 @@ interface AspectRatio {
   stringValue: string;
 }
 
+// START: New Interface for Upscale Factor
+interface UpscaleFactor {
+  label: string;
+  value: number; // 1 for original, 2 for 2x, etc.
+  stringValue: string; // "1x", "2x", "3x", "4x"
+}
+// END: New Interface for Upscale Factor
+
 @Component({
   selector: 'app-image-cropper-dialog',
   templateUrl: './image-cropper-dialog.component.html',
   styleUrls: ['./image-cropper-dialog.component.scss'],
 })
-export class ImageCropperDialogComponent {
+export class ImageCropperDialogComponent implements OnInit, OnDestroy { // Added Lifecycle interfaces
   isUploading = false;
   isConverting = false; // New state for the conversion step
   imageFile: File | null = null; // Initialize as null
+  enableUpscale = false; // Add property for template access
 
   croppedImageBlob: Blob | null = null;
   aspectRatios: AspectRatio[] = [];
   currentAspectRatio: number;
   containWithinAspectRatio = false;
   backgroundColor = 'white';
+
+  // START: Job Status Tracking Properties
+  private destroy$ = new Subject<void>();
+  activeUpscaleJob$: Observable<MediaItem | null>;
+  public readonly JobStatus = JobStatus;
+  isStartingJob = false;
+  // END: Job Status Tracking Properties
+
+  // START: Upscale Factor Properties
+  upscaleFactors: UpscaleFactor[] = [
+    { label: 'x2', value: 1, stringValue: 'x2' },
+    { label: 'x3', value: 2, stringValue: 'x3' },
+    { label: 'x4', value: 3, stringValue: 'x4' },
+  ];
+  currentUpscaleFactor: number;
+  // END: Upscale Factor Properties
 
   transform: ImageTransform = {
     translateUnit: 'px',
@@ -70,13 +95,22 @@ export class ImageCropperDialogComponent {
     public dialogRef: MatDialogRef<ImageCropperDialogComponent>,
     private http: HttpClient,
     private sourceAssetService: SourceAssetService,
+    private _snackBar: MatSnackBar,
     @Inject(MAT_DIALOG_DATA)
     public data: {
       imageFile: File;
       assetType: AssetTypeEnum;
       aspectRatios?: AspectRatio[];
+        enableUpscale?: boolean; // Added optional flag
     },
   ) {
+    // Initialize the job stream from the service
+    this.activeUpscaleJob$ = this.sourceAssetService.activeUpscaleJob$;
+
+    // START: Initialize enableUpscale
+    this.enableUpscale = this.data.enableUpscale || false;
+    // END: Initialize enableUpscale
+
     this.aspectRatios = data.aspectRatios || [
       {label: '1:1 Square', value: 1 / 1, stringValue: '1:1'},
       {label: '16:9 Horizontal', value: 16 / 9, stringValue: '16:9'},
@@ -85,6 +119,10 @@ export class ImageCropperDialogComponent {
       {label: '4:3 Pin', value: 4 / 3, stringValue: '4:3'},
     ];
     this.currentAspectRatio = this.aspectRatios[0].value;
+
+    // START: Initialize currentUpscaleFactor
+    this.currentUpscaleFactor = this.upscaleFactors[0].value;
+    // END: Initialize currentUpscaleFactor
 
     // Initialize the options object
     this.options = {
@@ -96,6 +134,27 @@ export class ImageCropperDialogComponent {
     };
     this.handleFile(this.data.imageFile); // Handle the file on init
   }
+
+  // START: Lifecycle Hooks
+  ngOnInit(): void {
+    // Monitor the job status to handle auto-closing on success
+    this.activeUpscaleJob$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(job => {
+        if (job?.status === JobStatus.COMPLETED) {
+          // Brief delay so the user sees the "Success" state in your new HTML
+          setTimeout(() => {
+            this.dialogRef.close(job);
+          }, 1500);
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+  // END: Lifecycle Hooks
 
   // --- Start: New file handling logic ---
   handleFile(file: File): void {
@@ -147,6 +206,12 @@ export class ImageCropperDialogComponent {
     this.backgroundColor = newColor;
     this.options = {...this.options, backgroundColor: newColor};
   }
+
+  // START: Upscale Factor Handler
+  onUpscaleFactorChange(newFactor: number): void {
+    this.currentUpscaleFactor = newFactor;
+  }
+  // END: Upscale Factor Handler
 
   // --- Start: Add New Control Methods ---
   rotateLeft() {
@@ -212,6 +277,7 @@ export class ImageCropperDialogComponent {
     if (event.blob) {
       this.croppedImageBlob = event.blob;
     }
+    // Note: The selected upscale factor is applied when calling uploadAsset
   }
 
   uploadCroppedImage() {
@@ -232,24 +298,58 @@ export class ImageCropperDialogComponent {
         ? selectedRatio.stringValue
         : '1:1';
 
-      this.isUploading = true;
-      this.uploadAsset(croppedFile, aspectRatioString)
-        .pipe(finalize(() => (this.isUploading = false)))
-        .subscribe(asset => {
-          this.sourceAssetService.addAsset(asset);
-          this.dialogRef.close(asset); // Close and return the final asset
-        });
-    }
-  }
+      const selectedFactor = this.upscaleFactors.find(
+        f => f.value === this.currentUpscaleFactor,
+      );
+      // Only set the upscale string if the feature is explicitly enabled
+      const upscaleFactorString = (this.enableUpscale && selectedFactor)
+        ? selectedFactor.stringValue
+        : ''; // Default to empty (No Upscale)
 
-  private uploadAsset(
-    file: File,
-    aspectRatio: string,
-  ): Observable<SourceAssetResponseDto> {
-    return this.sourceAssetService.uploadAsset(file, {
-      aspectRatio: aspectRatio,
-      scope: AssetScopeEnum.PRIVATE,
-      assetType: this.data.assetType || AssetTypeEnum.GENERIC_IMAGE,
-    });
+      this.isUploading = true;
+      this.isStartingJob = true; // Set connecting state
+
+      if (upscaleFactorString) {
+        // Case 1: Upscale Requested
+        this.sourceAssetService.uploadAndUpscaleImageAsset(croppedFile, {
+          aspectRatio: aspectRatioString,
+          upscaleFactor: upscaleFactorString,
+        })
+          .pipe(finalize(() => {
+            this.isUploading = false;
+            this.isStartingJob = false;
+          }))
+          .subscribe({
+            next: (job) => {
+              this.dialogRef.close({ started: true, job: job });
+            },
+            error: (err) => {
+              console.error("Upscale job failed to start:", err);
+              const context = err.status === 400 ? 'Image already in high resolution' : 'Upscale Failed';
+              handleErrorSnackbar(this._snackBar, err, context);
+            }
+          });
+      } else {
+        // Case 2: No Upscale (Just Upload)
+        this.sourceAssetService.uploadAsset(croppedFile, {
+          aspectRatio: aspectRatioString,
+        })
+          .pipe(finalize(() => {
+            this.isUploading = false;
+            this.isStartingJob = false;
+          }))
+          .subscribe({
+            next: (asset) => {
+              // Return the asset so calling components can use it
+              this.dialogRef.close({ started: false, asset: asset });
+              this.sourceAssetService.refreshAssets(); // Ensure assets list is updated
+            },
+            error: (err) => {
+              console.error("Upload failed:", err);
+              handleErrorSnackbar(this._snackBar, err, 'Upload Failed');
+            },
+          });
+      }
+    }
   }
 }
