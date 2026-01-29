@@ -29,7 +29,6 @@ from src.workflows_executor.dto.workflows_executor_dto import (
     GenerateImageRequest,
     EditImageRequest,
     GenerateVideoRequest,
-    CropImageRequest,
     VirtualTryOnRequest,
     GenerateAudioRequest,
 )
@@ -379,10 +378,6 @@ class WorkflowsExecutorService:
         await self._poll_job_status(video_id, authorization)
 
         return {"generated_video": video_id}
-
-    async def crop_image(self, request: CropImageRequest):
-        # logic here
-        return {"cropped_image": "https://example.com/cropped_image.png"}
 
     def _map_to_vto_input_link(self, input_data: int | list | ReferenceMediaOrAsset) -> Optional[dict]:
         if not input_data:

@@ -67,7 +67,6 @@ class ReferenceMediaOrAsset(BaseModel):
 
 class StepOutputReference(BaseModel):
     """Reference to an output from a previous step."""
-
     step: str
     output: str
 
@@ -216,23 +215,6 @@ class GenerateVideoStep(BaseStep[GenerateVideoInputs, GenerateVideoSettings]):
     settings: GenerateVideoSettings
 
 
-# --- Crop Image ---
-class CropImageInputs(BaseModel):
-    input_image: Union[StepOutputReference, List[WorkflowInputItem], int]
-
-
-class CropImageSettings(BaseModel):
-    crop_aspect_ratio: str
-    fill_aspect_ratio: bool
-    background_color: str
-
-
-class CropImageStep(BaseStep[CropImageInputs, CropImageSettings]):
-    type: Literal[NodeTypes.CROP_IMAGE]
-    inputs: CropImageInputs
-    settings: CropImageSettings
-
-
 # --- Virtual Try-On ---
 class VirtualTryOnInputs(BaseModel):
     model_image: WorkflowInputItem
@@ -288,7 +270,6 @@ WorkflowStepUnion = Union[
     GenerateImageStep,
     EditImageStep,
     GenerateVideoStep,
-    CropImageStep,
     VirtualTryOnStep,
     GenerateAudioStep,
 ]
