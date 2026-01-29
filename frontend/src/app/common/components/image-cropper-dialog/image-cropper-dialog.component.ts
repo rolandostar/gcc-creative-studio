@@ -57,6 +57,7 @@ export class ImageCropperDialogComponent implements OnInit, OnDestroy { // Added
   isUploading = false;
   isConverting = false; // New state for the conversion step
   imageFile: File | null = null; // Initialize as null
+  enableUpscale = false; // Add property for template access
 
   croppedImageBlob: Blob | null = null;
   aspectRatios: AspectRatio[] = [];
@@ -100,10 +101,15 @@ export class ImageCropperDialogComponent implements OnInit, OnDestroy { // Added
       imageFile: File;
       assetType: AssetTypeEnum;
       aspectRatios?: AspectRatio[];
+        enableUpscale?: boolean; // Added optional flag
     },
   ) {
     // Initialize the job stream from the service
     this.activeUpscaleJob$ = this.sourceAssetService.activeUpscaleJob$;
+
+    // START: Initialize enableUpscale
+    this.enableUpscale = this.data.enableUpscale || false;
+    // END: Initialize enableUpscale
 
     this.aspectRatios = data.aspectRatios || [
       {label: '1:1 Square', value: 1 / 1, stringValue: '1:1'},
@@ -292,14 +298,13 @@ export class ImageCropperDialogComponent implements OnInit, OnDestroy { // Added
         ? selectedRatio.stringValue
         : '1:1';
 
-      // START: Get the upscale factor string value
       const selectedFactor = this.upscaleFactors.find(
         f => f.value === this.currentUpscaleFactor,
       );
-      const upscaleFactorString = selectedFactor
+      // Only set the upscale string if the feature is explicitly enabled
+      const upscaleFactorString = (this.enableUpscale && selectedFactor)
         ? selectedFactor.stringValue
         : ''; // Default to empty (No Upscale)
-      // END: Get the upscale factor string value
 
       this.isUploading = true;
       this.isStartingJob = true; // Set connecting state

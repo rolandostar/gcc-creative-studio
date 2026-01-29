@@ -1411,16 +1411,19 @@ class ImagenService:
                 config=types.UpscaleImageConfig(
                     include_rai_reason=request_dto.include_rai_reason,
                     output_mime_type=MimeTypeEnum.IMAGE_PNG.value,
+                    person_generation="allow_all",
                 ),
             )
 
             # --- Step 2: Process the response and save to GCS ---
+            first_image = response.generated_images[0] if response.generated_images else None
+
             if (
-                response.generated_images
-                and response.generated_images[0].image
-                and response.generated_images[0].image.image_bytes
+                first_image
+                and first_image.image
+                and first_image.image.image_bytes
             ):
-                upscaled_bytes = response.generated_images[0].image.image_bytes
+                upscaled_bytes = first_image.image.image_bytes
                 # Create a unique filename for the upscaled image.
                 original_filename = os.path.basename(
                     request_dto.user_image.split("?")[0]
@@ -1436,10 +1439,7 @@ class ImagenService:
 
                 return ImageGenerationResult(
                     enhanced_prompt="",
-                    rai_filtered_reason=response.generated_images[
-                        0
-                    ].rai_filtered_reason
-                    or "",
+                    rai_filtered_reason=first_image.rai_filtered_reason or "",
                     image=CustomImagenResult(
                         gcs_uri=final_gcs_uri,
                         encoded_image="",
@@ -1447,6 +1447,10 @@ class ImagenService:
                         presigned_url="",
                     ),
                 )
+            elif first_image and first_image.rai_filtered_reason:
+                error_msg = f"Image upscaling filtered by RAI: {first_image.rai_filtered_reason}"
+                logger.warning(error_msg)
+                raise ValueError(error_msg)
             else:
                 raise ValueError(
                     "Image upscaling generation failed or returned no data."

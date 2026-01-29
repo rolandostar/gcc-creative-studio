@@ -54,20 +54,33 @@ export class ImageSelectorComponent {
     public data: {
         mimeType: 'image/*' | 'image/png' | 'video/mp4' | null;
       assetType: AssetTypeEnum;
+        enableUpscale?: boolean; // Added optional flag
     },
   ) { }
 
   handleFileSelect(file: File): void {
     if (file.type.startsWith('image/')) {
       const cropperDialogRef = this.dialog.open(ImageCropperDialogComponent, {
-        data: { imageFile: file, assetType: this.data.assetType },
+        data: {
+          imageFile: file,
+          assetType: this.data.assetType,
+          enableUpscale: this.data.enableUpscale // Pass the flag
+        },
         width: '600px',
       });
 
-      cropperDialogRef.afterClosed().subscribe((asset: SourceAssetResponseDto) => {
-        if (asset) {
-          // For new uploads, we return the asset so the parent can initiate upscale if needed
-          this.dialogRef.close(asset);
+      cropperDialogRef.afterClosed().subscribe((result: any) => {
+        if (result) {
+          // Unpack the wrapper object from ImageCropperDialogComponent
+          const asset = result.asset || result;
+
+          // Check if it looks like a SourceAssetResponseDto (has id and presignedUrl)
+          if (asset && asset.id && asset.presignedUrl) {
+            this.dialogRef.close(asset);
+          } else if (result.job) {
+            // If a job was returned (e.g. upscaling started), we might want to return that.
+            this.dialogRef.close(result.job);
+          }
         }
       });
     } else if (file.type.startsWith('video/')) {
@@ -102,7 +115,7 @@ export class ImageSelectorComponent {
    * Selection from the Gallery/Media list
    */
   onMediaItemSelected(selection: MediaItemSelection): void {
-    if (selection.mediaItem.mimeType?.startsWith('image/')) {
+    if (this.data.enableUpscale && selection.mediaItem.mimeType?.startsWith('image/')) {
       const upscaleDialogRef = this.dialog.open(UpscaleImageDialogComponent, {
         data: { selection: selection.mediaItem },
         width: '450px',
@@ -126,7 +139,7 @@ export class ImageSelectorComponent {
    * Selection from existing Assets
    */
   onAssetSelected(asset: SourceAssetResponseDto): void {
-    if (asset.mimeType.startsWith('image/')) {
+    if (this.data.enableUpscale && asset.mimeType.startsWith('image/')) {
       const upscaleDialogRef = this.dialog.open(UpscaleImageDialogComponent, {
         data: { asset: asset },
         width: '450px',
