@@ -74,6 +74,20 @@ const routes: Routes = [
     loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule),
     canActivate: [AdminAuthGuard],
   },
+<<<<<<< HEAD
+=======
+  {
+    path: 'workflows',
+    canActivate: [AuthGuardService],
+    children: [
+      { path: '', component: WorkflowListComponent, pathMatch: 'full' },
+      { path: 'new', component: WorkflowEditorComponent, canActivate: [AdminAuthGuard] },
+      // Match the parameter names used in your WorkflowEditorComponent
+      { path: 'edit/:workflowId', component: WorkflowEditorComponent, canActivate: [AdminAuthGuard] },
+      { path: ':id/executions', component: ExecutionHistoryComponent },
+    ],
+  },
+>>>>>>> develop
 ];
 
 @NgModule({
