@@ -183,7 +183,9 @@
             </div>
 
             <div *ngIf="assetPair.upscaled && assetPair.original && !isLoadingUpscale"
-              class="slider-comparison-container !aspect-video">
+              class="slider-comparison-container"
+              [style.aspect-ratio]="(assetPair.aspectRatio || '1:1').replace(':', ' / ')"
+              [style.width]="'min(100%, calc(50vh * ' + aspectRatioValue + '))'">
               <img [src]="assetPair.original.url" alt="Original" class="comparison-image original-img"
                 [style.clipPath]="'inset(0 ' + (100 - sliderValue) + '% 0 0)'" />
               <img [src]="assetPair.upscaled.url" alt="Upscaled" class="comparison-image upscaled-img"

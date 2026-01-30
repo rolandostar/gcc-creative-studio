@@ -240,7 +240,7 @@ $progress-active-color: $step-active-color;
   .slider-comparison-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  /* aspect-ratio: 1 / 1; Removed to allow dynamic aspect ratio */
   overflow: hidden;
   border-radius: 8px;
   background: #000;
@@ -325,7 +325,7 @@ $progress-active-color: $step-active-color;
 
 @media (min-width: 768px) {
   .video-container {
-    height: 25vh;
+    height: 20vh;
   }
 }
 

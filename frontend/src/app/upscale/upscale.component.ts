@@ -28,7 +28,7 @@ import { MediaItem, JobStatus } from '../common/models/media-item.model';
 import { handleErrorSnackbar } from '../utils/handleMessageSnackbar';
 
 interface UploadedAsset { name: string; url: string; }
-interface AssetPair { original: UploadedAsset | null; upscaled: UploadedAsset | null; }
+interface AssetPair { original: UploadedAsset | null; upscaled: UploadedAsset | null; aspectRatio?: string; }
 
 @Component({
   selector: 'app-upscale',
@@ -100,6 +100,7 @@ export class UpscaleComponent implements OnInit, OnDestroy {
 
             this.assetPair.original = { name: 'Original Image', url: originalUrl };
             this.assetPair.upscaled = { name: 'Upscaled Image', url: upscaledUrl };
+            this.assetPair.aspectRatio = activeJob.aspectRatio;
             
             // Clear selected asset as we now have the result
             this.selectedAsset = null;
@@ -165,6 +166,7 @@ export class UpscaleComponent implements OnInit, OnDestroy {
                 name: asset.originalFilename, 
                 url: asset.presignedUrl || asset.gcsUri 
             };
+            this.assetPair.aspectRatio = asset.aspectRatio;
             this.assetPair.upscaled = null; // Reset upscaled
             this.completedJobId = null; // Reset previous job ID
             this.cdr.detectChanges();
@@ -243,5 +245,12 @@ export class UpscaleComponent implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     this.openUploaderDialog();
+  }
+
+  get aspectRatioValue(): number {
+    if (!this.assetPair.aspectRatio) return 1;
+    const parts = this.assetPair.aspectRatio.split(':');
+    if (parts.length !== 2) return 1;
+    return parseFloat(parts[0]) / parseFloat(parts[1]);
   }
 }
