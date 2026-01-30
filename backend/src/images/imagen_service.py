@@ -818,6 +818,8 @@ def _process_upload_upscale_in_background(
     from google.cloud.logging import Client as LoggerClient
     from google.cloud.logging.handlers import CloudLoggingHandler
     from src.source_assets.source_asset_service import SourceAssetService
+    from src.common.media_utils import generate_image_thumbnail_from_gcs
+    import time
 
     worker_logger = logging.getLogger(f"upscale_worker.{media_item_id}")
     worker_logger.setLevel(logging.INFO)
@@ -882,6 +884,8 @@ def _process_upload_upscale_in_background(
                     used_source_asset_id = source_asset_id
 
                     try:
+                        start_time = time.monotonic()
+                        
                         # --- Case 1: New file upload ---
                         if file_bytes:
                             if not filename:
@@ -965,10 +969,24 @@ def _process_upload_upscale_in_background(
                                 ).model_dump()
                             )
 
+                        # Generate thumbnail
+                        thumbnail_uris = []
+                        if final_upscaled_uri:
+                             thumb_uri = generate_image_thumbnail_from_gcs(gcs_service, final_upscaled_uri, MimeTypeEnum.IMAGE_PNG.value)
+                             if thumb_uri:
+                                 thumbnail_uris.append(thumb_uri)
+                             else:
+                                 thumbnail_uris.append(final_upscaled_uri)
+
+                        end_time = time.monotonic()
+                        generation_time = end_time - start_time
+
                         update_data = {
                             "status": JobStatusEnum.COMPLETED,
                             "gcs_uris": [final_upscaled_uri],
                             "original_gcs_uris": [final_original_uri] if final_original_uri else [],
+                            "thumbnail_uris": thumbnail_uris,
+                            "generation_time": generation_time,
                             "num_media": 1,
                             "mime_type": MimeTypeEnum.IMAGE_PNG,
                             "source_assets": source_assets_list if source_assets_list else None
@@ -1069,7 +1087,7 @@ class ImagenService:
                     if projected_pixels > MAX_OUTPUT_PIXELS:
                          raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Image is too large for upscaling to {upscale_factor} times. Max output is ~17MP. Your image would result in ~{projected_pixels / 1000000:.1f}MP."
+                            detail=f"Image is too large for upscaling to {upscale_factor} times, reduce the Upscale Factor and try again."
                         )
                  except HTTPException:
                      raise
