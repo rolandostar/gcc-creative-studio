@@ -136,6 +136,8 @@ async def upload_upscale(
     upscale_factor: Optional[str] = Form(None, alias="upscaleFactor"),
     file_hash: Optional[str] = Form(None, alias="fileHash"),
     assetType: Optional[AssetTypeEnum] = Form(None),
+    enhance_input_image: Optional[bool] = Form(None, alias="enhance_input_image"),
+    image_preservation_factor: Optional[float] = Form(None, alias="image_preservation_factor"),
     current_user: UserModel = Depends(get_current_user),
     service: ImagenService = Depends(),
     workspace_auth: WorkspaceAuth = Depends(),
@@ -166,6 +168,8 @@ async def upload_upscale(
         file_hash=file_hash,
         scope=scope,
         mime_type=mime_type,
+        enhance_input_image=enhance_input_image,
+        image_preservation_factor=image_preservation_factor,
     )
     
 

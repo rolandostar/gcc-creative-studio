@@ -125,9 +125,9 @@
           </div>
 
           <!-- Settings Controls -->
-          <div class="bg-[#404040] p-4 rounded-lg border-2 border-[#e0e0e0] border-dashed">
+          <div class="bg-[#404040] p-4 rounded-lg border-2 border-[#e0e0e0]">
             <div class="mb-4">
-              <h4 class="text-white mb-2">Upscale Factor</h4>
+              <h4 class="text-white mb-2 !text-sm">Upscale Factor</h4>
               <div class="flex gap-2">
                 <button *ngFor="let factor of upscaleFactors" 
                         (click)="setUpscaleFactor(factor)"
@@ -142,22 +142,27 @@
             </div>
             
             <div class="mb-6">
-              <h4 class="text-white mb-2">Supported Resolutions</h4>
-              <div class="flex flex-wrap gap-2">
-                 <button *ngFor="let res of supportedResolutions" 
-                        (click)="setSupportedResolution(res)"
-                        [class.bg-blue-600]="supportedResolution === res"
-                        [class.text-white]="supportedResolution === res"
-                        [class.bg-gray-700]="supportedResolution !== res"
-                        [class.text-gray-300]="supportedResolution !== res"
-                        class="px-3 py-1 rounded transition-colors text-sm">
-                  {{ res }}
-                </button>
-              </div>
+              <h4 class="text-white mb-2 !text-sm">Enhance Input Image</h4>
+              <mat-checkbox [(ngModel)]="enhanceInputImage">
+                <span class="text-white">Enable Enhancement</span>
+              </mat-checkbox>
             </div>
 
-            <button mat-raised-button color="primary" 
-                    class="w-full !py-1 !text-lg !font-bold !rounded-full" 
+            <div class="mb-6">
+              <h4 class="text-white mb-2 !text-sm">Image Preservation Factor</h4>
+              <div class="flex items-center gap-4">
+                <mat-slider min="0" max="1" step="0.1" showTickMarks discrete class="w-full">
+                  <input matSliderThumb [(ngModel)]="imagePreservationFactor">
+                </mat-slider>
+                <span class="text-white w-12 text-right">{{ imagePreservationFactor === null ? 'Auto' : imagePreservationFactor }}</span>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">
+                Higher values respect original pixels more. Lower values allow more detail generation.
+              </p>
+            </div>
+
+            <button mat-raised-button 
+                    class="w-full !py-1 !text-lg !font-bold !rounded-full !bg-gradient-to-r from-blue-500 via-violet-500 to-red-400 !text-white" 
                     [disabled]="!selectedAsset || isLoadingUpscale"
                     (click)="startUpscale()">
                <mat-icon class="mr-2">auto_awesome</mat-icon> Upscale
@@ -192,9 +197,13 @@
           </div>
 
           <div class="flex justify-center gap-4 mt-6" *ngIf="assetPair.upscaled && !isLoadingUpscale">
-
             <button mat-raised-button class="download-btn-upscaler" (click)="downloadUpscaled()">
               <mat-icon class="mr-2">download</mat-icon>Download
+            </button>
+            
+            <button mat-stroked-button color="primary" class="!rounded-full !px-6 !py-1 !font-bold" 
+                    (click)="navigateToDetails()" *ngIf="completedJobId">
+               <mat-icon class="mr-2">info</mat-icon> See more info
             </button>
           </div>
         </div>

@@ -19,6 +19,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, Observable } from 'rxjs';
 import { takeUntil, distinctUntilChanged } from 'rxjs/operators';
+import { Router } from '@angular/router'; // Added Router
 import { ImageSelectorComponent } from '../common/components/image-selector/image-selector.component';
 import { SourceAssetService, SourceAssetResponseDto } from '../common/services/source-asset.service';
 import { GalleryService } from '../gallery/gallery.service';
@@ -46,10 +47,11 @@ export class UpscaleComponent implements OnInit, OnDestroy {
   upscaleFactor: string = '2x';
   upscaleFactors: string[] = ['2x', '3x', '4x'];
   
-  supportedResolution: string = '4K';
-  supportedResolutions: string[] = ['4K', '8K', '16K'];
+  enhanceInputImage: boolean = false;
+  imagePreservationFactor: number | null = null;
 
   selectedAsset: SourceAssetResponseDto | null = null;
+  completedJobId: number | null = null; // Track completed job ID
 
   private destroy$ = new Subject<void>();
 
@@ -61,7 +63,8 @@ export class UpscaleComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private sourceAssetService: SourceAssetService,
     private galleryService: GalleryService,
-    private _snackBar: MatSnackBar
+    private _snackBar: MatSnackBar,
+    private router: Router // Inject Router
   ) {
     // Initialize the combined job stream
     this.activeUpscaleJob$ = this.sourceAssetService.activeUpscaleJob$;
@@ -85,6 +88,7 @@ export class UpscaleComponent implements OnInit, OnDestroy {
           if (activeJob.status === JobStatus.COMPLETED) {
             // Reset error overlay for future jobs
             this.showErrorOverlay = true;
+            this.completedJobId = activeJob.id; // Store job ID
 
             const originalUrl = (activeJob.originalPresignedUrls && activeJob.originalPresignedUrls.length > 0)
               ? activeJob.originalPresignedUrls[0]
@@ -102,6 +106,7 @@ export class UpscaleComponent implements OnInit, OnDestroy {
           } else if (activeJob.status === JobStatus.FAILED) {
             this.isLoadingUpscale = false;
             this.showErrorOverlay = false;
+            this.completedJobId = null;
             
             if (activeJob.errorMessage) {
                 handleErrorSnackbar(this._snackBar, { message: activeJob.errorMessage }, 'Upscale Failed');
@@ -125,10 +130,6 @@ export class UpscaleComponent implements OnInit, OnDestroy {
 
   setUpscaleFactor(factor: string): void {
     this.upscaleFactor = factor;
-  }
-
-  setSupportedResolution(resolution: string): void {
-    this.supportedResolution = resolution;
   }
 
   openUploaderDialog(event?: MouseEvent): void {
@@ -165,6 +166,7 @@ export class UpscaleComponent implements OnInit, OnDestroy {
                 url: asset.presignedUrl || asset.gcsUri 
             };
             this.assetPair.upscaled = null; // Reset upscaled
+            this.completedJobId = null; // Reset previous job ID
             this.cdr.detectChanges();
         }
       }
@@ -178,7 +180,8 @@ export class UpscaleComponent implements OnInit, OnDestroy {
     // Use the service to start the upscale job
     this.sourceAssetService.upscaleExistingAsset(this.selectedAsset, {
         upscaleFactor: 'x' + this.upscaleFactor.replace('x', ''), // Ensure format "x2", "x4"
-        // Note: Resolution is not currently supported by the backend upscale endpoint directly
+        enhance_input_image: this.enhanceInputImage,
+        image_preservation_factor: this.imagePreservationFactor
     }).subscribe({
         next: (job) => {
             console.log('Upscale job started:', job);
@@ -215,11 +218,18 @@ export class UpscaleComponent implements OnInit, OnDestroy {
     }
   }
 
+  navigateToDetails(): void {
+    if (this.completedJobId) {
+      this.router.navigate(['/gallery', this.completedJobId]);
+    }
+  }
+
   clearImage(event: MouseEvent): void {
     event.stopPropagation();
     this.assetPair = { original: null, upscaled: null };
     this.isLoadingUpscale = false;
     this.selectedAsset = null;
+    this.completedJobId = null;
     // Notify services to clear status to allow new uploads
     (this.sourceAssetService as any).activeUpscaleJob.next(null);
   }

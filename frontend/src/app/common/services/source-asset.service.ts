@@ -47,6 +47,8 @@ export interface SourceAssetOptionsDto {
   scope?: AssetScopeEnum;
   mimeType?: string;
   upscaleFactor?: string;
+  enhance_input_image?: boolean;
+  image_preservation_factor?: number | null;
 }
 
 export interface SourceAssetSearchDto {
@@ -231,6 +233,14 @@ export class SourceAssetService {
 
     if (options.upscaleFactor) {
       formData.append('upscaleFactor', options.upscaleFactor);
+    }
+
+    if (options.enhance_input_image !== undefined) {
+      formData.append('enhanceInputImage', String(options.enhance_input_image));
+    }
+
+    if (options.image_preservation_factor !== undefined && options.image_preservation_factor !== null) {
+      formData.append('imagePreservationFactor', String(options.image_preservation_factor));
     }
 
     return this.http

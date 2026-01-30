@@ -44,6 +44,19 @@ class UpscaleImagenDto(BaseDto):
         default=MimeTypeEnum.IMAGE_PNG,
         description="""type of the image to upscale either "image/jpeg" or "image/png".""",
     )
+    enhance_input_image: bool = Field(
+        default=False,
+        description="""Whether to add an image enhancing step before upscaling.
+      It is expected to suppress the noise and JPEG compression artifacts
+      from the input image.""",
+    )
+    image_preservation_factor: float | None = Field(
+        default=None,
+        description="""With a higher image preservation factor, the original image
+      pixels are more respected. With a lower image preservation factor, the
+      output image will have be more different from the input image, but
+      with finer details and less noise.""",
+    )
 
     @field_validator("generation_model")
     def validate_imagen_generation_model(

@@ -191,6 +191,8 @@ class SourceAssetService:
         asset_type: Optional[AssetTypeEnum] = None,
         aspect_ratio: Optional[AspectRatioEnum] = None,
         upscale_factor: Optional[str] = None,
+        enhance_input_image: Optional[bool] = None,
+        image_preservation_factor: Optional[float] = None,
     ) -> SourceAssetResponseDto:
         """
         Handles uploading, de-duplicating, upscaling, and saving a new user asset.
@@ -320,6 +322,8 @@ class SourceAssetService:
                             upscale_factor=upscale_factor,
                             mime_type=MimeTypeEnum.IMAGE_PNG,
                             generation_model=GenerationModelEnum.IMAGEN_4_UPSCALE_PREVIEW,
+                            enhance_input_image=enhance_input_image or False,
+                            image_preservation_factor=image_preservation_factor,
                         )
                         upscaled_result = (
                             await self.imagen_service.upscale_image(upscale_dto)
