@@ -224,28 +224,4 @@ class GcsService:
             logger.error(
                 f"Failed to download '{destination_blob_name}' from GCS: {e}"
             )
-
-    def check_file_exists(self, gcs_uri: str) -> bool:
-        """
-        Checks if a file exists in GCS.
-
-        Args:
-            gcs_uri: The full GCS URI (e.g., "gs://bucket-name/path/to/blob").
-
-        Returns:
-            True if the file exists, False otherwise.
-        """
-        try:
-            if not gcs_uri:
-                return False
-            if not gcs_uri.startswith("gs://"):
-                logger.warning(f"Invalid GCS URI format: {gcs_uri}")
-                return False
-
-            bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
-            bucket = self.client.bucket(bucket_name)
-            blob = bucket.blob(blob_name)
-            return blob.exists()
-        except Exception as e:
-            logger.error(f"Error checking file existence for {gcs_uri}: {e}")
-            return False
+        return None

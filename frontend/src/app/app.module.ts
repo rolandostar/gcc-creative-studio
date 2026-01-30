@@ -104,6 +104,7 @@ import { GenericStepComponent } from './workflows/workflow-editor/step-component
 import { WorkflowEditorComponent } from './workflows/workflow-editor/workflow-editor.component';
 import { WorkflowListComponent } from './workflows/workflow-list/workflow-list.component';
 import { WorkflowStatusPipe } from './workflows/workflow-status.pipe';
+import { UpscaleComponent } from './upscale/upscale.component';
 
 @NgModule({
   declarations: [
@@ -134,10 +135,10 @@ import { WorkflowStatusPipe } from './workflows/workflow-status.pipe';
     StepMediaInputComponent,
     RunWorkflowModalComponent,
     ExecutionHistoryComponent,
-
     ExecutionDetailsModalComponent,
     StepExecutionDetailsComponent,
     BatchExecutionModalComponent,
+    UpscaleComponent,
   ],
   imports: [
     BrowserModule,

@@ -957,23 +957,23 @@ class ImagenService:
         self.cfg = config_service
 
     async def start_upload_upscale_job(
-    self,
-    user: UserModel,
-    executor: ThreadPoolExecutor,
-    workspace_id: int,
-    gcs_uri: str,
-    mime_type: str,
-    original_filename: Optional[str],
-    file_hash: Optional[str],
-    scope: Optional[AssetScopeEnum] = None,
-    file_bytes: Optional[bytes] = None, 
-    filename: Optional[str] = None,
-    source_asset_id: Optional[str] = None,
-    media_item_id_existing: Optional[int] = None,
-    upscale_factor: Optional[str] = None,
-    aspect_ratio: Optional[AspectRatioEnum] = None,
-    asset_type: Optional[AssetTypeEnum] = None,
-) -> MediaItemResponse:
+        self,
+        user: UserModel,
+        executor: ThreadPoolExecutor,
+        workspace_id: int,
+        gcs_uri: str,
+        mime_type: str,
+        original_filename: Optional[str],
+        file_hash: Optional[str],
+        scope: Optional[AssetScopeEnum] = None,
+        file_bytes: Optional[bytes] = None, 
+        filename: Optional[str] = None,
+        source_asset_id: Optional[str] = None,
+        media_item_id_existing: Optional[int] = None,
+        upscale_factor: Optional[str] = None,
+        aspect_ratio: Optional[AspectRatioEnum] = None,
+        asset_type: Optional[AssetTypeEnum] = None,
+    ) -> MediaItemResponse:
         
         # --- Validation for Existing Assets (Sync Check) ---
         target_gcs_uri = None
@@ -1068,7 +1068,7 @@ class ImagenService:
         return MediaItemResponse(**created_item.model_dump(), presigned_urls=[], original_presigned_urls=[])
 
 
-async def start_image_generation_job(
+    async def start_image_generation_job(
         self,
         request_dto: CreateImagenDto,
         user: UserModel,

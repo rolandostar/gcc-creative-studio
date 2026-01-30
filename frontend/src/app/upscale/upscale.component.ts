@@ -45,7 +45,7 @@ export class UpscaleComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   // 1. Unified job stream for the full-screen overlay
-  activeUpscaleJob$: Observable<MediaItem | null>;
+  activeUpscaleJob$: Observable<MediaItem | null> | null = null;
 
   constructor(
     private dialog: MatDialog,
@@ -54,12 +54,12 @@ export class UpscaleComponent implements OnInit, OnDestroy {
     private galleryService: GalleryService
   ) {
     // Initialize the combined job stream
-    this.activeUpscaleJob$ = combineLatest([
-      this.sourceAssetService.activeUpscaleJob$,
-      this.galleryService.activeUpscaleJob$
-    ]).pipe(
-      map(([sourceJob, galleryJob]) => sourceJob || galleryJob)
-    );
+    // this.activeUpscaleJob$ = combineLatest([
+    //   this.sourceAssetService.activeUpscaleJob$,
+    //   this.galleryService.activeUpscaleJob$
+    // ]).pipe(
+    //   map(([sourceJob, galleryJob]) => sourceJob || galleryJob)
+    // );
   }
 
   ngOnInit(): void {
@@ -67,40 +67,40 @@ export class UpscaleComponent implements OnInit, OnDestroy {
      * 2. Subscribe to job changes to update the local component state
      * This handles the image comparison view logic.
      */
-    this.activeUpscaleJob$
-      .pipe(
-        takeUntil(this.destroy$),
-        distinctUntilChanged((prev, curr) => prev?.id === curr?.id && prev?.status === curr?.status)
-      )
-      .subscribe((activeJob) => {
-        if (activeJob) {
-          // Sync local loading state
-          this.isLoadingUpscale = activeJob.status === JobStatus.PROCESSING;
+    // this.activeUpscaleJob$
+    //   .pipe(
+    //     takeUntil(this.destroy$),
+    //     distinctUntilChanged((prev, curr) => prev?.id === curr?.id && prev?.status === curr?.status)
+    //   )
+    //   .subscribe((activeJob) => {
+    //     if (activeJob) {
+    //       // Sync local loading state
+    //       this.isLoadingUpscale = activeJob.status === JobStatus.PROCESSING;
 
-          if (activeJob.status === JobStatus.COMPLETED) {
-            // Reset error overlay for future jobs
-            this.showErrorOverlay = true;
-            // Snackbar logic moved to AppComponent
+    //       if (activeJob.status === JobStatus.COMPLETED) {
+    //         // Reset error overlay for future jobs
+    //         this.showErrorOverlay = true;
+    //         // Snackbar logic moved to AppComponent
 
-            const originalUrl = (activeJob.originalPresignedUrls && activeJob.originalPresignedUrls.length > 0)
-              ? activeJob.originalPresignedUrls[0]
-              : (activeJob as any).url;
+    //         const originalUrl = (activeJob.originalPresignedUrls && activeJob.originalPresignedUrls.length > 0)
+    //           ? activeJob.originalPresignedUrls[0]
+    //           : (activeJob as any).url;
 
-            const upscaledUrl = (activeJob.presignedUrls && activeJob.presignedUrls.length > 0)
-              ? activeJob.presignedUrls[0]
-              : (activeJob as any).url;
+    //         const upscaledUrl = (activeJob.presignedUrls && activeJob.presignedUrls.length > 0)
+    //           ? activeJob.presignedUrls[0]
+    //           : (activeJob as any).url;
 
-            this.assetPair.original = { name: 'Original Image', url: originalUrl };
-            this.assetPair.upscaled = { name: 'Upscaled Image', url: upscaledUrl };
-          } else if (activeJob.status === JobStatus.FAILED) {
-            this.isLoadingUpscale = false;
-            // Snackbar logic moved to AppComponent
-            this.showErrorOverlay = false;
-          }
+    //         this.assetPair.original = { name: 'Original Image', url: originalUrl };
+    //         this.assetPair.upscaled = { name: 'Upscaled Image', url: upscaledUrl };
+    //       } else if (activeJob.status === JobStatus.FAILED) {
+    //         this.isLoadingUpscale = false;
+    //         // Snackbar logic moved to AppComponent
+    //         this.showErrorOverlay = false;
+    //       }
 
-          this.cdr.detectChanges();
-        }
-      });
+    //       this.cdr.detectChanges();
+    //     }
+    //   });
   }
 
   ngOnDestroy(): void {
