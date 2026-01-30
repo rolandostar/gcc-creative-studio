@@ -828,6 +828,23 @@
             </div>
         </div> -->
 
+<!-- Bottom Footer (Download) -->
+<div class="flex justify-end w-full max-w-[108rem] mx-auto mb-8 px-6">
+    <button
+        mat-raised-button
+        class="btn-cta"
+        (click)="downloadVideo()"
+        [disabled]="timelineClips().length === 0 || isDownloading()"
+    >
+        <mat-icon *ngIf="!isDownloading()">download</mat-icon>
+        <mat-icon
+            *ngIf="isDownloading()"
+            class="animate-spin"
+        >sync</mat-icon>
+        <span>{{ isDownloading() ? 'Rendering...' : 'Download' }}</span>
+    </button>
+</div>
+
             </div>
         </div>
     </div>
