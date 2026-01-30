@@ -29,15 +29,15 @@ import {
   Inject,
   PLATFORM_ID
 } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
-import {MatIconRegistry } from '@angular/material/icon';
-import { MatSliderModule } from '@angular/material/slider';
+import { isPlatformBrowser } from '@angular/common';
+import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { MatDialog } from '@angular/material/dialog';
 import { ImageSelectorComponent, MediaItemSelection } from '../common/components/image-selector/image-selector.component';
 import { SourceAssetResponseDto } from '../common/services/source-asset.service';
-import { MediaItem } from '../common/models/media-item.model';
 // --- Interfaces ---
+import { WorkbenchService, TimelineRequest, Clip } from './workbench.service';
+
 interface MediaAsset {
   id: string;
   name: string;
@@ -156,6 +156,9 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
 
   // Services
   private sanitizer = inject(DomSanitizer);
+  private workbenchService = inject(WorkbenchService);
+
+  isDownloading = signal(false);
 
   // Trimming state (for clip in/out adjustments)
   trimState: {
@@ -794,6 +797,52 @@ export class WorkbenchComponent implements OnInit, OnDestroy {
   
   onVideoEnded() {}
   onMetadataLoaded() {}
+
+
+  // --- Download / Render ---
+  downloadVideo() {
+    // Only allow download if there are clips and not already downloading
+    if (this.timelineClips().length === 0 || this.isDownloading()) return;
+
+    this.isDownloading.set(true);
+
+    // Map timeline clips to request format
+    const requestClips: Clip[] = this.timelineClips().map(clip => {
+      const asset = this.assets().find(a => a.id === clip.assetId);
+      return {
+        assetId: clip.assetId,
+        url: asset?.url || '',
+        startTime: clip.startTime,
+        duration: clip.duration,
+        offset: clip.offset,
+        trackIndex: clip.trackIndex,
+        type: clip.trackIndex === 0 ? 'video' : 'audio'
+      };
+    });
+
+    const request: TimelineRequest = {
+      clips: requestClips
+    };
+
+    this.workbenchService.renderVideo(request).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `creative-studio-export-${new Date().getTime()}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.isDownloading.set(false);
+      },
+      error: (err) => {
+        console.error('Download failed', err);
+        this.isDownloading.set(false);
+        // Ideally show a snackbar here
+      }
+    });
+  }
 
   // --- Interaction ---
   
