@@ -20,10 +20,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
 
-# --- Google Auth for Identity Platform ---
-from google.auth.transport import requests as google_auth_requests
-from google.oauth2 import id_token
-
 from src.config.config_service import config_service
 from src.users.user_model import UserModel, UserRoleEnum
 from src.users.user_service import UserService
@@ -53,26 +49,14 @@ async def get_current_user(
     5. Returns a Pydantic model with the user's data.
     """
     try:
-        decoded_token = {}
-        if config_service.ENVIRONMENT == "local":
-            # --- Local: Use Firebase Auth ---
-            # Verifies the token using the standard Firebase Admin SDK method.
-            logger.info("Verifying token using Firebase Admin SDK...")
-            decoded_token = await asyncio.to_thread(auth.verify_id_token, token)
-        else:
-            # --- Development/Production: Use Google Identity Platform (OIDC) ---
-            # Verifies the Google-issued OIDC ID token. The audience must be the
-            # OAuth 2.0 client ID of the Identity Platform-protected resource.
-            GOOGLE_TOKEN_AUDIENCE = config_service.GOOGLE_TOKEN_AUDIENCE
-            decoded_token = await asyncio.to_thread(
-                id_token.verify_oauth2_token,
-                token,
-                google_auth_requests.Request(),
-                audience=GOOGLE_TOKEN_AUDIENCE,
-            )
+        # Verifies the token using the standard Firebase Admin SDK method.
+        # This works for all environments now that we use Firebase SAML everywhere.
+        decoded_token = await asyncio.to_thread(auth.verify_id_token, token)
 
         email = decoded_token.get("email")
         name = decoded_token.get("name")
+        if not name:
+            name = email
         picture = decoded_token.get("picture", "")
         token_info_hd = decoded_token.get("hd")
 
@@ -123,12 +107,12 @@ async def get_current_user(
             # or try to use the repo if accessible.
             # user_service.user_repo is public.
             if user_doc.id:
-                 await user_service.user_repo.update(user_doc.id, {"picture": picture})
+                await user_service.user_repo.update(user_doc.id, {"picture": picture})
 
         return user_doc
 
     except auth.ExpiredIdTokenError:
-        logger.error(f"[get_current_user - auth.ExpiredIdTokenError]")
+        logger.error("[get_current_user - auth.ExpiredIdTokenError]")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication token has expired.",
