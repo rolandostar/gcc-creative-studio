@@ -22,16 +22,13 @@ import {environment} from '../../../environments/environment';
 import {Auth, IdTokenResult} from '@angular/fire/auth';
 import {UserService} from '../services/user.service';
 import {
-  GoogleAuthProvider,
+  SAMLAuthProvider,
   signInWithPopup,
   UserCredential,
 } from '@angular/fire/auth';
 import {Observable, from, throwError, of} from 'rxjs';
 import {catchError, tap, map, switchMap} from 'rxjs/operators';
 import {isPlatformBrowser} from '@angular/common';
-
-// Declare the 'google' global object from the Google Identity Services script
-declare const google: any;
 
 const FIREBASE_SESSION_KEY = 'firebase_session';
 const USER_DETAILS = 'USER_DETAILS';
@@ -48,7 +45,7 @@ interface FirebaseSession {
 export class AuthService {
   private readonly auth: Auth = inject(Auth);
   private platformId = inject(PLATFORM_ID);
-  private readonly provider: GoogleAuthProvider = new GoogleAuthProvider();
+  private readonly provider: SAMLAuthProvider = new SAMLAuthProvider('saml.azurewif');
 
   // Store token temporarily in memory for the session
   private currentOAuthAccessToken: string | null = null;
@@ -60,19 +57,15 @@ export class AuthService {
     private httpClient: HttpClient,
     private userService: UserService,
   ) {
-    this.provider.setCustomParameters({
-      // Set custom params for the provider
-      prompt: 'select_account',
-    });
     this.loadSessionFromStorage();
   }
 
   /**
-   * A test sign-in method to get a Google ID token compatible with Firebase.
+   * Sign-in method to get a SAML ID token compatible with Firebase.
    *
    * @returns An Observable that emits the Firebase-compatible ID token.
    */
-  signInWithGoogleFirebase(): Observable<string> {
+  signInWithSAML(): Observable<string> {
     return from(signInWithPopup(this.auth, this.provider)).pipe(
       // Step 1: Get the Firebase ID token from the successful sign-in.
       switchMap((userCredential: UserCredential) => {
@@ -140,107 +133,6 @@ export class AuthService {
           localStorage.setItem(FIREBASE_SESSION_KEY, JSON.stringify(session));
         }),
       );
-    }
-
-    // Fallback case: The Firebase Auth instance is not yet initialized, but we
-    // have a valid token from localStorage. We can use this for the current
-    // request. The next request will likely hit the ideal case above.
-    return of(this.firebaseIdToken!);
-  }
-
-  /**
-   * A test sign-in method to get a Google ID token compatible with Identity Platform.
-   *
-   * @returns An Observable that emits the Identity Platform-compatible ID token.
-   */
-  signInForGoogleIdentityPlatform(): Observable<string> {
-    return this.promptForIdentityPlatformToken$().pipe(
-      switchMap(idToken => {
-        const payload = JSON.parse(atob(idToken.split('.')[1]));
-        const userEmail = payload.email?.toLowerCase();
-
-        // If allowed, proceed to save session and return token
-        this.firebaseIdToken = idToken;
-        this.firebaseTokenExpiry = payload.exp * 1000;
-
-        const session: FirebaseSession = {
-          token: idToken,
-          expiry: this.firebaseTokenExpiry,
-        };
-        localStorage.setItem(FIREBASE_SESSION_KEY, JSON.stringify(session));
-
-        // Call the backend to get or create the user profile.
-        return this.syncUserWithBackend$(idToken).pipe(
-          map(() => idToken), // Pass the token along for the final result.
-        );
-      }),
-    );
-  }
-
-  private promptForIdentityPlatformToken$(): Observable<string> {
-    const GOOGLE_CLIENT_ID = environment.GOOGLE_CLIENT_ID;
-
-    return new Observable<string>(observer => {
-      if (typeof google === 'undefined') {
-        return observer.error(
-          new Error(
-            'Google Identity Services script not loaded. Add it to index.html',
-          ),
-        );
-      }
-
-      const loginTimeout = setTimeout(() => {
-        observer.error(
-          new Error(
-            'Login timed out or third party sign-in may be disabled. Please try again and enable third party sign-in by clicking on the information button at the top left side of the browser.',
-          ),
-        );
-      }, 15000);
-
-      try {
-        google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: (response: any) => {
-            clearTimeout(loginTimeout);
-            const idToken = response.credential;
-            if (idToken) {
-              observer.next(idToken);
-              observer.complete();
-            } else {
-              observer.error(
-                new Error(
-                  'Google Sign-In response did not contain a credential.',
-                ),
-              );
-            }
-          },
-        });
-
-        // Trigger the One Tap prompt.
-        // Per new docs, we don't use the notification object for flow control.
-        google.accounts.id.prompt();
-      } catch (error) {
-        clearTimeout(loginTimeout);
-        console.error(
-          'Error during Google Identity Platform sign-in initialization:',
-          error,
-        );
-        observer.error(error);
-      }
-    });
-  }
-
-  /**
-   * Asynchronously gets a valid Identity Platform token.
-   * 1. Checks for a valid, non-expired token in memory/cache.
-   * 2. If expired or missing, attempts a silent refresh.
-   * 3. If silent refresh fails, it emits an error, signaling a required re-login.
-   */
-  getValidIdentityPlatformToken$(): Observable<string> {
-    // First, check our own session info which is loaded from localStorage.
-    // This is synchronous and tells us if we have a valid, non-expired token.
-    if (!this.isLoggedIn()) {
-      return of();
     }
 
     // Fallback case: The Firebase Auth instance is not yet initialized, but we
