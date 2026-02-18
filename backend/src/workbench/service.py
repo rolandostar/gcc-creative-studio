@@ -104,10 +104,8 @@ class WorkbenchService:
 
                 # Audio (Trim + ASETPTS)
                 a_label = f"[a{i}_trim]"
-                if info['has_audio']:
-                    filter_chains.append(f"[{input_idx}:a]atrim=start={clip.offset}:duration={clip.duration},asetpts=PTS-STARTPTS{a_label}")
-                else:
-                    filter_chains.append(f"anullsrc=channel_layout=stereo:sample_rate=44100,atrim=duration={clip.duration}{a_label}")
+                # Mute video audio to allow separate audio tracks
+                filter_chains.append(f"anullsrc=channel_layout=stereo:sample_rate=44100,atrim=duration={clip.duration}{a_label}")
                 concat_a_in.append(a_label)
             
             # Concat the Main Track
