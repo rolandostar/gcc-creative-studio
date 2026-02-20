@@ -154,13 +154,14 @@ class CreateImagenDto(BaseDto):
         is_gemini_3_pro = (
             self.generation_model == GenerationModelEnum.GEMINI_3_PRO_IMAGE_PREVIEW
         )
+        
         is_gemini_flash = (
             self.generation_model == GenerationModelEnum.GEMINI_2_5_FLASH_IMAGE_PREVIEW
             or self.generation_model == GenerationModelEnum.GEMINI_2_5_FLASH_IMAGE
         )
 
         # Aspect Ratio Validation
-        allowed_ratios_gemini_3 = [
+        allowed_ratios_gemini = [
             AspectRatioEnum.RATIO_1_1,
             AspectRatioEnum.RATIO_3_4,
             AspectRatioEnum.RATIO_4_3,
@@ -173,15 +174,10 @@ class CreateImagenDto(BaseDto):
             AspectRatioEnum.RATIO_21_9,
         ]
         
-        if is_gemini_3_pro:
-            if self.aspect_ratio not in allowed_ratios_gemini_3:
+        if is_gemini_3_pro or is_gemini_flash:
+            if self.aspect_ratio not in allowed_ratios_gemini:
                  raise ValueError(
-                    f"Aspect ratio {self.aspect_ratio} is not supported for Gemini 3 Pro."
-                )
-        elif is_gemini_flash:
-            if self.aspect_ratio != AspectRatioEnum.RATIO_1_1:
-                raise ValueError(
-                    f"Aspect ratio {self.aspect_ratio} is not supported for Gemini Flash. Only 1:1 is supported."
+                    f"Aspect ratio {self.aspect_ratio} is not supported for Gemini models."
                 )
         else: # Imagen models
             allowed_ratios_imagen = [
