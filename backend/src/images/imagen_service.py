@@ -340,6 +340,7 @@ def gemini_flash_image_preview_generate_image(
     prompt: str,
     model: Literal[
         GenerationModelEnum.GEMINI_2_5_FLASH_IMAGE_PREVIEW,
+        GenerationModelEnum.GEMINI_2_5_FLASH_IMAGE,
         GenerationModelEnum.GEMINI_3_PRO_IMAGE_PREVIEW,
     ],
     bucket_name: str,
@@ -561,6 +562,7 @@ def _process_image_in_background(
                                 request_dto.generation_model
                                 in [
                                     GenerationModelEnum.GEMINI_2_5_FLASH_IMAGE_PREVIEW,
+                                    GenerationModelEnum.GEMINI_2_5_FLASH_IMAGE,
                                     GenerationModelEnum.GEMINI_3_PRO_IMAGE_PREVIEW,
                                 ]
                             ):
@@ -619,6 +621,7 @@ def _process_image_in_background(
                                 request_dto.generation_model
                                 in [
                                     GenerationModelEnum.GEMINI_2_5_FLASH_IMAGE_PREVIEW,
+                                    GenerationModelEnum.GEMINI_2_5_FLASH_IMAGE,
                                     GenerationModelEnum.GEMINI_3_PRO_IMAGE_PREVIEW,
                                 ]
                             ):
