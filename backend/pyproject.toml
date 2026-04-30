@@ -17,7 +17,7 @@ name = "creative-studio"
 version = "0.1.0"
 description = "GenMedia Creative Studio"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11.2"
 dependencies = [
     "gunicorn>=23.0.0",
     "uvicorn>=0.37.0",
